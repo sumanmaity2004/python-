@@ -1,0 +1,97 @@
+class UndirectedGraph:
+    def __init__(self, vertices):
+        self.vertices = vertices
+        self.adj_list = {i: [] for i in range(vertices)}
+    
+    def add_edge(self, u, v):
+        self.adj_list[u].append(v)
+        self.adj_list[v].append(u)  # Ensuring undirected edges
+
+    def dfs_visit(self, node, time_counter, discovery_times, finish_times, parents, back_edges, visited=None):
+        if visited is None:
+            visited = set()
+
+        visited.add(node)
+        discovery_times[node] = time_counter.increment()
+        
+        for neighbor in self.adj_list[node]:
+            if neighbor not in visited:
+                parents[neighbor] = node
+                self.dfs_visit(neighbor, time_counter, discovery_times, finish_times, parents, back_edges, visited)
+            elif neighbor != parents[node] and discovery_times[neighbor] < discovery_times[node]:  # Fixed condition
+                back_edges.append((node, neighbor))
+
+        finish_times[node] = time_counter.increment()
+
+
+class DFSTimeCounter:
+    def __init__(self):
+        self.time = -1
+
+    def increment(self):
+        self.time += 1
+        return self.time
+
+
+# Create the graph
+g = UndirectedGraph(5)
+g.add_edge(0, 1)
+g.add_edge(0, 2)
+g.add_edge(0, 4)
+g.add_edge(2, 3)
+g.add_edge(2, 4)
+g.add_edge(3, 4)
+
+# Initialize tracking structures
+discovery_times = [None] * 5
+finish_times = [None] * 5
+dfs_tree_parents = [None] * 5
+dfs_back_edges = []
+
+# Run DFS from node 0
+g.dfs_visit(0, DFSTimeCounter(), discovery_times, finish_times, dfs_tree_parents, dfs_back_edges)
+
+# Display results
+print('DFS visit discovery and finish times:')
+print('Node\tDiscovery\tFinish')
+for i in range(5):
+    print(f'{i} \t {discovery_times[i]}\t\t {finish_times[i]}')
+
+# Assertions to verify correctness
+assert discovery_times[0] == 0, 'Fail: Node 0 discovery time must be 0'
+assert discovery_times[1] == 1, 'Fail: Node 1 discovery must be 1'
+assert finish_times[1] == 2, 'Fail: Node 1 finish time must be 2'
+assert discovery_times[2] == 3, 'Fail: Node 2 discovery must be 3'
+assert finish_times[2] == 8, 'Fail: Node 2 finish time must be 8'
+assert discovery_times[3] == 4, 'Fail: Node 3 discovery must be 4'
+assert finish_times[3] == 7, 'Fail: Node 3 finish time must be 7'
+assert discovery_times[4] == 5, 'Fail: Node 4 discovery must be 5'
+assert finish_times[4] == 6, 'Fail: Node 4 finish time must be 6'
+
+print('Success -- Discovery and finish times are correct.\n')
+
+# Print DFS parents
+print('Node\tDFS-Tree-Parent')
+for i in range(5):
+    print(f'{i} \t {dfs_tree_parents[i]}')
+
+assert dfs_tree_parents[0] is None, 'Fail: Node 0 must not have a parent'
+assert dfs_tree_parents[1] == 0, 'Fail: Node 1 parent must be 0'
+assert dfs_tree_parents[2] == 0, 'Fail: Node 2 parent must be 0'
+assert dfs_tree_parents[3] == 2, 'Fail: Node 3 parent must be 2'
+assert dfs_tree_parents[4] == 3, 'Fail: Node 4 parent must be 3'
+
+print('Success -- DFS parents are correct.\n')
+
+# Identify non-trivial back edges
+non_trivial_back_edges = [(i, j) for (i, j) in dfs_back_edges if dfs_tree_parents[i] != j]
+
+print('Back edges:')
+for (i, j) in non_trivial_back_edges:
+    print(f'({i}, {j})')
+
+assert len(non_trivial_back_edges) == 2, f'Fail: Expected 2 non-trivial back edges, found {len(non_trivial_back_edges)}'
+assert (4, 2) in non_trivial_back_edges, '(4,2) must be a non-trivial back edge'
+assert (4, 0) in non_trivial_back_edges, '(4,0) must be a non-trivial back edge'
+
+print('Success -- 15 points!')
