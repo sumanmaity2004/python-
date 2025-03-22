@@ -1,0 +1,40 @@
+import random
+
+# Define the structure of a BST Node
+class BSTNode:
+    def __init__(self, key):
+        self.key = key
+        self.left = None
+        self.right = None
+
+# Insert a key into BST and return its depth
+def insert(root, key, depth=0):
+    if root is None:
+        return BSTNode(key), depth  # Return the new node and depth
+    
+    if key < root.key:
+        root.left, new_depth = insert(root.left, key, depth + 1)
+    else:
+        root.right, new_depth = insert(root.right, key, depth + 1)
+
+    return root, new_depth
+
+# Run a single experiment
+def run_single_experiment(n):
+    numbers = list(range(n))  # 1. Make list of numbers from 0 to n-1
+    random.shuffle(numbers)   # 2. Randomly shuffle the list
+
+    root = None
+    max_depth = 0
+    
+    # 3. Insert numbers into the tree
+    for num in numbers:
+        root, depth = insert(root, num)
+        max_depth = max(max_depth, depth)  # Keep track of maximum depth
+    
+    return max_depth  # 4. Return the height of the resulting tree
+
+# Run multiple trials and compute average depth
+def run_multiple_trials(n, numTrials):
+    depths = [run_single_experiment(n) for _ in range(numTrials)]
+    return sum(depths) / len(depths), depths  # Return average and list of depths
