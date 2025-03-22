@@ -1,0 +1,36 @@
+def computeShortestPath(graph, source_coordinates, dest_coordinates):
+    pq = PriorityQueue()  # Initialize priority queue
+    source = graph.get_vertex_from_coords(*source_coordinates)  # Get source vertex
+    dest = graph.get_vertex_from_coords(*dest_coordinates)  # Get destination vertex
+    
+    source.d = 0  # Distance from source to itself is 0
+    pq.insert(source)  # Insert source into priority queue
+    
+    while not pq.is_empty():
+        u = pq.get_and_delete_min()  # Extract the vertex with the smallest distance
+        u.processed = True  # Mark as processed
+        
+        if (u.x, u.y) == dest_coordinates:  # Destination reached
+            break
+        
+        for v, w in graph.get_list_of_neighbors(u):
+            if not v.processed and v.d > u.d + w:
+                v.d = u.d + w  # Update shortest path estimate
+                v.pi = u  # Update predecessor
+                
+                if v.idx_in_priority_queue == -1:
+                    pq.insert(v)  # Insert if not in queue
+                else:
+                    pq.update_vertex_weight(v)  # Update priority queue
+    
+    # Reconstruct path from destination to source
+    path = []
+    current = dest
+    while current:
+        path.append((current.x, current.y))
+        current = current.pi
+    path.reverse()
+    
+    return path, dest.d  # Return path and shortest distance
+
+    
