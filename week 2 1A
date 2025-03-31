@@ -1,76 +1,62 @@
-class Node:
-    def __init__(self, key, parent=None):
-        self.key = key
-        self.parent = parent
-        self.left = None
-        self.right = None
+import heapq
+
+class DFSTimeCounter:
+    def __init__(self):
+        self.count = 0
+    
+    def reset(self):
+        self.count = 0
+    
+    def increment(self):
+        self.count += 1
         
-        if parent:
-            if key < parent.key:
-                assert parent.left is None, 'Parent already has a left child'
-                parent.left = self
-            else:
-                assert key > parent.key, 'Duplicate keys not allowed in BST'
-                assert parent.right is None, 'Parent already has a right child'
-                parent.right = self
-
-    def get_leftmost_descendant(self):
-        if self.left:
-            return self.left.get_leftmost_descendant()
-        return self
-
-    def search(self, key):
-        if self.key == key:
-            
-            return True, self
-        elif key < self.key and self.left:
-            return self.left.search(key)
-        elif key > self.key and self.right:
-            return self.right.search(key)
-        return False, self  # Return the potential parent if key not found
-
-    def insert(self, key):
-        found, parent = self.search(key)
-        if found:
-            return None  # Key already exists
-        if key < parent.key:
-            return Node(key, parent)
-        else:
-            return Node(key, parent)
-
-    def height(self):
-        left_height = self.left.height() if self.left else 0
-        right_height = self.right.height() if self.right else 0
-        return 1 + max(left_height, right_height)
-
-    def delete(self, key):
-        found, node_to_delete = self.search(key)
-        assert found, f'Key {key} not found in tree'
-
-        # Case 1: Node has no children
-        if not node_to_delete.left and not node_to_delete.right:
-            if node_to_delete == node_to_delete.parent.left:
-                node_to_delete.parent.left = None
-            else:
-                node_to_delete.parent.right = None
-
-        # Case 2: Node has one child
-        elif node_to_delete.left and not node_to_delete.right:
-            if node_to_delete == node_to_delete.parent.left:
-                node_to_delete.parent.left = node_to_delete.left
-            else:
-                node_to_delete.parent.right = node_to_delete.left
-            node_to_delete.left.parent = node_to_delete.parent
-        elif node_to_delete.right and not node_to_delete.left:
-            if node_to_delete == node_to_delete.parent.left:
-                node_to_delete.parent.left = node_to_delete.right
-            else:
-                node_to_delete.parent.right = node_to_delete.right
-            node_to_delete.right.parent = node_to_delete.parent
-
-        # Case 3: Node has two children
-        else:
-            successor = node_to_delete.right.get_leftmost_descendant()
-            node_to_delete.key = successor.key
-            successor.parent.left = None if successor.parent.left == successor else successor.parent.right
-            successor.parent.right = None if successor.parent.right == successor else successor.parent.right
+    def get(self):
+        return self.count 
+    
+class UndirectedGraph:
+    def __init__(self, n):
+        assert n >= 1, 'Empty graph is not allowed'
+        self.n = n
+        self.adj_list = [set() for _ in range(self.n)]
+       
+    def add_edge(self, i, j):
+        assert 0 <= i < self.n and 0 <= j < self.n, 'Vertex index out of bounds'
+        assert i != j, 'Self-loops are not allowed'
+        self.adj_list[i].add(j)
+        self.adj_list[j].add(i)
+    
+    def get_neighboring_vertices(self, i):
+        assert 0 <= i < self.n
+        return self.adj_list[i]
+    
+    def dfs_visit(self, i, dfs_timer, discovery_times, finish_times, dfs_tree_parent, dfs_back_edges):
+        assert 0 <= i < self.n
+        assert discovery_times[i] is None
+        assert finish_times[i] is None
+        
+        discovery_times[i] = dfs_timer.get()
+        dfs_timer.increment()
+        
+        for neighbor in self.get_neighboring_vertices(i):
+            if discovery_times[neighbor] is None:
+                dfs_tree_parent[neighbor] = i
+                self.dfs_visit(neighbor, dfs_timer, discovery_times, finish_times, dfs_tree_parent, dfs_back_edges)
+            elif finish_times[neighbor] is None:
+                dfs_back_edges.append((i, neighbor))
+        
+        finish_times[i] = dfs_timer.get()
+        dfs_timer.increment()
+    
+    def dfs_traverse_graph(self):
+        dfs_timer = DFSTimeCounter()
+        discovery_times = [None] * self.n
+        finish_times = [None] * self.n
+        dfs_tree_parents = [None] * self.n
+        dfs_back_edges = []
+        
+        for i in range(self.n):
+            if discovery_times[i] is None:
+                self.dfs_visit(i, dfs_timer, discovery_times, finish_times, dfs_tree_parents, dfs_back_edges)
+        
+        non_trivial_back_edges = [(i, j) for (i, j) in dfs_back_edges if dfs_tree_parents[i] != j]
+        return dfs_tree_parents, non_trivial_back_edges, discovery_times, finish_times
